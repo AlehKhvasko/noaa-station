@@ -8,9 +8,13 @@ import java.util.List;
 
 public interface WeatherDataRepository extends JpaRepository<Records, Long> {
 
-    List<Records> findByStationIdAndDate(
-            String stationId,
-            LocalDate date
+    List<Records> findByStationIdOrderByDateDesc(
+            String stationId
     );
 
+    List<Records> findByStationIdAndDateBetweenOrderByDateAsc(
+            String stationId,
+            LocalDate from,
+            LocalDate to
+    );
 }
