@@ -5,7 +5,6 @@ import gov.noaastation.repository.WeatherDataRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -21,21 +20,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
 @Slf4j
 @Component
-public class DataInitializer {
+public class WeatherDataInitializer {
 
-    private static final int IMPORT_BATCH_SIZE = 5_000;
+    private static final int IMPORT_BATCH_SIZE = 100_000;
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final WeatherDataRepository weatherDataRepository;
     private final ResourcePatternResolver resourcePatternResolver;
 
-
-    public DataInitializer(
+    public WeatherDataInitializer(
             WeatherDataRepository weatherDataRepository,
             ResourcePatternResolver resourcePatternResolver
     ) {
@@ -43,9 +39,14 @@ public class DataInitializer {
         this.resourcePatternResolver = resourcePatternResolver;
     }
 
-
     @PostConstruct
     public void init() {
+        //skips 30+ mln records insert if any exist
+        if(weatherDataRepository.count() > 0){
+            log.info("Weather data already exists. Skipping CSV import.");
+            return;
+        }
+
         try {
             Resource[] resources = resourcePatternResolver.getResources(
                     "classpath*:csv/weather/*.csv"
@@ -99,12 +100,25 @@ public class DataInitializer {
                 batch.add(weatherData);
 
                 if (batch.size() >= IMPORT_BATCH_SIZE) {
+                    long start = System.nanoTime();
+
                     weatherDataRepository.saveAll(batch);
+                    weatherDataRepository.flush();
+
+                    long elapsed = System.nanoTime() - start;
+
+                    log.info(
+                            "Inserted {},d records in {} seconds //n",
+                            batch.size(),
+                            (elapsed / 1_000_000_000.0)
+                    );
+
                     importedRecords += batch.size();
 
                     if (importedRecords % 100_000 == 0) {
                         log.info("Imported {} weather records", importedRecords);
                     }
+
                     batch.clear();
                 }
             }
