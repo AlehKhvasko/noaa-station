@@ -27,6 +27,7 @@ import java.util.List;
 @Component
 public class DataInitializer {
 
+    private static final int IMPORT_BATCH_SIZE = 5_000;
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -97,7 +98,7 @@ public class DataInitializer {
 
                 batch.add(weatherData);
 
-                if (batch.size() >= 1000) {
+                if (batch.size() >= IMPORT_BATCH_SIZE) {
                     weatherDataRepository.saveAll(batch);
                     importedRecords += batch.size();
 
