@@ -15,7 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Table(name = "weather_data")
 
-public class WeatherData {
+public class Records {
     @Id
     @SequenceGenerator(
             name = "weather_data_sequence",

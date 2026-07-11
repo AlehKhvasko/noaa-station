@@ -1,6 +1,6 @@
 package gov.noaastation.util;
 
-import gov.noaastation.entity.WeatherData;
+import gov.noaastation.entity.Records;
 import gov.noaastation.repository.WeatherDataRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +41,10 @@ public class WeatherDataInitializer {
 
     @PostConstruct
     public void init() {
-        //skips 30+ mln records insert if any exist
+        /*
+          Temp flag to avoid overflowing DB,
+          skips 30+ mln records insert if any exist
+         */
         if(weatherDataRepository.count() > 0){
             log.info("Weather data already exists. Skipping CSV import.");
             return;
@@ -75,7 +78,7 @@ public class WeatherDataInitializer {
     private void importWeatherFile(Resource resource) throws IOException {
         log.info("Importing data from {}", resource.getFilename());
 
-        List<WeatherData> batch = new ArrayList<>();
+        List<Records> batch = new ArrayList<>();
 
         try(Reader reader = new InputStreamReader(
                 resource.getInputStream(),
@@ -86,7 +89,7 @@ public class WeatherDataInitializer {
             long importedRecords = 0;
             //TODO optimize?
             for (CSVRecord record : csvParser) {
-                WeatherData weatherData = WeatherData.builder()
+                Records weatherData = Records.builder()
                         .stationId(record.get(0).trim())
                         .date(LocalDate.parse(record.get(1).trim(), DATE_FORMATTER))
                         .element(record.get(2).trim())
@@ -108,9 +111,10 @@ public class WeatherDataInitializer {
                     long elapsed = System.nanoTime() - start;
 
                     log.info(
-                            "Inserted {},d records in {} seconds //n",
+                            "Inserted {} records in {} seconds. Total imported: {}",
                             batch.size(),
-                            (elapsed / 1_000_000_000.0)
+                            String.format("%.3f", elapsed / 1_000_000_000.0),
+                            importedRecords
                     );
 
                     importedRecords += batch.size();
@@ -126,7 +130,6 @@ public class WeatherDataInitializer {
                 weatherDataRepository.saveAll(batch);
             }
             log.info("Finished importing {}", resource.getFilename());
-
         }
     }
 }
