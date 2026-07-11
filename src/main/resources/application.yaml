@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/noaa
+    username: postgres
+    password: password
+
+  flyway:
+    enabled: true
+
+    jpa:
+      hibernate:
+        jdbc:
+          batch_size: 100
+          order_inserts: true
+          format_sql: false
+          generate_statistics: false
+        ddl-auto: validate
+      show-sql: true
+
