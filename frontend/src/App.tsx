@@ -1,318 +1,338 @@
 import { useEffect, useState } from "react";
 
 type Station = {
-  stationId: string;
-  name: string;
-  stateCode: string;
+    stationId: string;
+    name: string;
+    stateCode: string;
 };
 
-type WeatherRecord = {
-  id: number;
-  stationId: string;
-  date: string;
-  element: string;
-  value: number;
+type DailyWeather = {
+    date: string;
+    stationId: string;
+    precipitationInches: number | null;
+    snowfallInches: number | null;
+    snowDepthInches: number | null;
 };
 
 function App() {
-  const [states, setStates] = useState<string[]>([]);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [records, setRecords] = useState<WeatherRecord[]>([]);
+    const [states, setStates] = useState<string[]>([]);
+    const [stations, setStations] = useState<Station[]>([]);
+    const [records, setRecords] = useState<DailyWeather[]>([]);
 
-  const [state, setState] = useState("");
-  const [stationId, setStationId] = useState("");
-  const [from, setFrom] = useState("2026-01-01");
-  const [to, setTo] = useState("2026-12-31");
-  const [error, setError] = useState("");
+    const [state, setState] = useState("");
+    const [stationId, setStationId] = useState("");
+    const [from, setFrom] = useState("2026-01-01");
+    const [to, setTo] = useState("2026-12-31");
+    const [error, setError] = useState("");
 
-  useEffect(() => {
-    console.info("Loading states");
+    useEffect(() => {
+        fetch("http://localhost:8080/api/v1/states")
+            .then((response) => {
+                console.log("States response status:", response.status);
 
-    fetch("http://localhost:8080/api/v1/states")
-        .then((response) => {
-          console.info("GET /api/v1/states", {
-            status: response.status,
-          });
+                if (!response.ok) {
+                    throw new Error(
+                        `Failed to load states: ${response.status}`
+                    );
+                }
 
-          if (!response.ok) {
-            throw new Error(`Failed to load states: ${response.status}`);
-          }
+                return response.json();
+            })
+            .then((data: string[]) => {
+                console.log("States data:", data);
+                console.log("States count:", data.length);
 
-          return response.json();
-        })
-        .then((data: string[]) => {
-          console.info("States loaded", {
-            count: data.length,
-            states: data,
-          });
+                setStates(data);
+            })
+            .catch((error: unknown) => {
+                console.error("Failed to load states:", error);
+                setError("Could not load states.");
+            });
+    }, []);
 
-          setStates(data);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to load states", error);
-          setError("Could not load states.");
+    function loadStations(selectedState: string) {
+        console.log("Selected state:", selectedState);
+
+        setState(selectedState);
+        setStationId("");
+        setRecords([]);
+        setError("");
+
+        if (!selectedState) {
+            setStations([]);
+            return;
+        }
+
+        const params = new URLSearchParams({
+            state: selectedState,
         });
-  }, []);
 
-  function loadStations(selectedState: string) {
-    console.info("State selected", {
-      state: selectedState,
-    });
+        const url =
+            `http://localhost:8080/api/v1/stations?${params.toString()}`;
 
-    setState(selectedState);
-    setStationId("");
-    setRecords([]);
-    setError("");
+        console.log("Stations request URL:", url);
 
-    if (!selectedState) {
-      console.info("State cleared");
-      setStations([]);
-      return;
+        fetch(url)
+            .then((response) => {
+                console.log("Stations response status:", response.status);
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Failed to load stations: ${response.status}`
+                    );
+                }
+
+                return response.json();
+            })
+            .then((data: Station[]) => {
+                console.log("Stations data:", data);
+                console.log("Stations count:", data.length);
+
+                if (data.length > 0) {
+                    console.table(data);
+                } else {
+                    console.warn(
+                        `No stations returned for state ${selectedState}`
+                    );
+                }
+
+                setStations(data);
+            })
+            .catch((error: unknown) => {
+                console.error("Failed to load stations:", error);
+                setStations([]);
+                setError("Could not load stations.");
+            });
     }
 
-    const url =
-        `http://localhost:8080/api/v1/stations` +
-        `?state=${(selectedState)}`;
+    async function loadWeather() {
+        setError("");
 
-    console.info("Loading stations", {
-      state: selectedState,
-      url,
-    });
-
-    fetch(url)
-        .then((response) => {
-          console.info("GET /api/v1/stations", {
-            status: response.status,
-            state: selectedState,
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to load stations: ${response.status}`);
-          }
-
-          return response.json();
-        })
-        .then((data: Station[]) => {
-          console.info("Stations loaded", {
-            state: selectedState,
-            count: data.length,
-          });
-
-          setStations(data);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to load stations", {
-            state: selectedState,
-            error,
-          });
-
-          setStations([]);
-          setError("Could not load stations.");
-        });
-  }
-
-  function loadWeather() {
-    setError("");
-
-    if (!stationId) {
-      console.warn("No station selected");
-      setError("Select a station first.");
-      return;
-    }
-
-    if (from > to) {
-      console.warn("Invalid date range", {
-        from,
-        to,
-      });
-
-      setError("From date must be before the To date.");
-      return;
-    }
-
-    const params = new URLSearchParams({
-      from,
-      to,
-    });
-
-    const url =
-        `http://localhost:8080/api/v1/stations/` +
-        `${encodeURIComponent(stationId)}/weather?${params}`;
-
-    console.info("Loading weather records", {
-      stationId,
-      from,
-      to,
-      url,
-    });
-
-    fetch(url)
-        .then((response) => {
-          console.info(" GET /api/v1/weather", {
-            status: response.status,
+        console.log("Weather search:", {
+            state,
             stationId,
             from,
             to,
-          });
+        });
 
-          if (!response.ok) {
-            throw new Error(
-                `Failed to load weather records: ${response.status}`
-            );
-          }
+        if (!stationId) {
+            setError("Select a station first.");
+            return;
+        }
 
-          return response.json();
-        })
-        .then((data: WeatherRecord[]) => {
-          console.info("Weather records loaded", {
-            stationId,
-            count: data.length,
-          });
+        if (from > to) {
+            setError("From date must be before the To date.");
+            return;
+        }
 
-          setRecords(data);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to load weather records", {
-            stationId,
+        const params = new URLSearchParams({
             from,
             to,
-            error,
-          });
-
-          setRecords([]);
-          setError("Could not load weather records.");
         });
-  }
 
-  return (
-      <main
-          style={{
-            maxWidth: "900px",
-            margin: "40px auto",
-            padding: "20px",
-          }}
-      >
-        <h1>NOAA Weather</h1>
+        const url =
+            `http://localhost:8080/api/v1/stations/` +
+            `${encodeURIComponent(stationId)}/weather?${params.toString()}`;
 
-        <div
+        console.log("Weather request URL:", url);
+
+        try {
+            const response = await fetch(url);
+
+            console.log("Weather response status:", response.status);
+
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to load weather records: ${response.status}`
+                );
+            }
+
+            const data: DailyWeather[] = await response.json();
+
+            console.log("Weather data:", data);
+            console.log("Weather records count:", data.length);
+
+            if (data.length > 0) {
+                console.table(data);
+            } else {
+                console.warn("Backend returned 0 weather records.", {
+                    stationId,
+                    from,
+                    to,
+                });
+            }
+
+            setRecords(data);
+        } catch (error: unknown) {
+            console.error("Failed to load weather records:", error);
+            setRecords([]);
+            setError("Could not load weather records.");
+        }
+    }
+
+    return (
+        <main
             style={{
-              display: "flex",
-              gap: "12px",
-              flexWrap: "wrap",
+                maxWidth: "900px",
+                margin: "40px auto",
+                padding: "20px",
             }}
         >
-          <select
-              value={state}
-              onChange={(event) => loadStations(event.target.value)}
-          >
-            <option value="">Select state</option>
+            <h1>NOAA Weather</h1>
 
-            {states.map((stateCode) => (
-                <option key={stateCode} value={stateCode}>
-                  {stateCode}
-                </option>
-            ))}
-          </select>
-
-          <select
-              value={stationId}
-              onChange={(event) => {
-                const selectedId = event.target.value;
-
-                console.info("Station selected", {
-                  stationId: selectedId,
-                });
-
-                setStationId(selectedId);
-              }}
-              disabled={!state}
-          >
-            <option value="">Select station</option>
-
-            {stations.map((station) => (
-                <option
-                    key={station.stationId}
-                    value={station.stationId}
+            <div
+                style={{
+                    display: "flex",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                }}
+            >
+                <select
+                    value={state}
+                    onChange={(event) =>
+                        loadStations(event.target.value)
+                    }
                 >
-                  {station.name} ({station.stationId})
-                </option>
-            ))}
-          </select>
+                    <option value="">Select state</option>
 
-          <input
-              type="date"
-              value={from}
-              onChange={(event) => {
-                console.info("From date changed", {
-                  from: event.target.value,
-                });
+                    {states.map((stateCode) => (
+                        <option
+                            key={stateCode}
+                            value={stateCode}
+                        >
+                            {stateCode}
+                        </option>
+                    ))}
+                </select>
 
-                setFrom(event.target.value);
-              }}
-          />
+                <select
+                    value={stationId}
+                    onChange={(event) => {
+                        const selectedStationId =
+                            event.target.value;
 
-          <input
-              type="date"
-              value={to}
-              onChange={(event) => {
-                console.info("To date changed", {
-                  to: event.target.value,
-                });
+                        console.log(
+                            "Selected station:",
+                            selectedStationId
+                        );
 
-                setTo(event.target.value);
-              }}
-          />
+                        setStationId(selectedStationId);
+                        setRecords([]);
+                    }}
+                    disabled={!state}
+                >
+                    <option value="">Select station</option>
 
-          <button onClick={loadWeather}>Search</button>
-        </div>
+                    {stations.map((station) => (
+                        <option
+                            key={station.stationId}
+                            value={station.stationId}
+                        >
+                            {station.name} ({station.stationId})
+                        </option>
+                    ))}
+                </select>
 
-        {error && (
-            <p style={{ color: "dark" }}>
-              {error}
-            </p>
-        )}
+                <input
+                    type="date"
+                    value={from}
+                    onChange={(event) =>
+                        setFrom(event.target.value)
+                    }
+                />
 
-        <table
-            style={{
-              width: "100%",
-              marginTop: "30px",
-              borderCollapse: "collapse",
-            }}
-        >
-          <thead>
-          <tr>
-            <th style={cellStyle}>Date</th>
-            <th style={cellStyle}>Station</th>
-            <th style={cellStyle}>Element</th>
-            <th style={cellStyle}>Value</th>
-          </tr>
-          </thead>
+                <input
+                    type="date"
+                    value={to}
+                    onChange={(event) =>
+                        setTo(event.target.value)
+                    }
+                />
 
-          <tbody>
-          {records.map((record) => (
-              <tr key={record.id}>
-                <td style={cellStyle}>{record.date}</td>
-                <td style={cellStyle}>{record.stationId}</td>
-                <td style={cellStyle}>{record.element}</td>
-                <td style={cellStyle}>{record.value}</td>
-              </tr>
-          ))}
-          </tbody>
-        </table>
+                <button type="button" onClick={loadWeather}>
+                    Search
+                </button>
+            </div>
 
-        {records.length === 0 && (
-            <p style={{ marginTop: "30px" }}>
-              No weather records loaded.
-            </p>
-        )}
-      </main>
-  );
+            {error && (
+                <p style={{ color: "darkred" }}>
+                    {error}
+                </p>
+            )}
+
+            <table
+                style={{
+                    width: "100%",
+                    marginTop: "30px",
+                    borderCollapse: "collapse",
+                }}
+            >
+                <thead>
+                <tr>
+                    <th style={cellStyle}>Date</th>
+                    <th style={cellStyle}>Station</th>
+                    <th style={cellStyle}>Rain</th>
+                    <th style={cellStyle}>Snowfall</th>
+                    <th style={cellStyle}>Snow depth</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {records.map((record) => (
+                    <tr
+                        key={`${record.stationId}-${record.date}`}
+                    >
+                        <td style={cellStyle}>
+                            {record.date}
+                        </td>
+
+                        <td style={cellStyle}>
+                            {record.stationId}
+                        </td>
+
+                        <td style={cellStyle}>
+                            {formatInches(
+                                record.precipitationInches
+                            )}
+                        </td>
+
+                        <td style={cellStyle}>
+                            {formatInches(
+                                record.snowfallInches
+                            )}
+                        </td>
+
+                        <td style={cellStyle}>
+                            {formatInches(
+                                record.snowDepthInches
+                            )}
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+
+            {records.length === 0 && !error && (
+                <p style={{ marginTop: "30px" }}>
+                    No weather records loaded.
+                </p>
+            )}
+        </main>
+    );
+}
+
+function formatInches(value: number | null): string {
+    if (value === null) {
+        return "—";
+    }
+
+    return `${value.toFixed(2)} in`;
 }
 
 const cellStyle = {
-  border: "1px solid #ccc",
-  padding: "10px",
-  textAlign: "left" as const,
+    border: "1px solid #ccc",
+    padding: "10px",
+    textAlign: "left" as const,
 };
 
 export default App;

@@ -1,9 +1,9 @@
 package gov.noaastation.controller;
 
-import gov.noaastation.entity.Records;
+import gov.noaastation.dto.DailyWeatherResponse;
 import gov.noaastation.entity.Station;
 import gov.noaastation.repository.StationRepository;
-import gov.noaastation.repository.WeatherDataRepository;
+import gov.noaastation.service.WeatherRecordsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,39 +18,33 @@ import java.util.List;
 public class StationController {
 
     private final StationRepository stationRepository;
-    private final WeatherDataRepository weatherDataRepository;
+    private final WeatherRecordsService weatherRecordsService;
 
     public StationController(
             StationRepository stationRepository,
-            WeatherDataRepository weatherDataRepository
+            WeatherRecordsService weatherRecordsService
     ) {
         this.stationRepository = stationRepository;
-        this.weatherDataRepository = weatherDataRepository;
+        this.weatherRecordsService = weatherRecordsService;
     }
 
-    /*
-     * Used to populate the state dropdown.
-     * Sample: /api/v1/states
-     */
     @GetMapping("/states")
     public List<String> getStates() {
-        List<String> states = stationRepository.findDistinctStateCodes();
+        List<String> states =
+                stationRepository.findDistinctStateCodes();
 
         log.info("Found {} distinct state codes", states.size());
+
         return states;
     }
 
-    /*
-     * Used after the user selects a state.
-     * Sample: /api/v1/stations?state=TX
-     */
     @GetMapping("/stations")
     public List<Station> getStationsByState(
             @RequestParam String state
     ) {
-
         List<Station> stations =
-                stationRepository.findByStateCodeIgnoreCaseOrderByNameAsc(state);
+                stationRepository
+                        .findByStateCodeIgnoreCaseOrderByNameAsc(state);
 
         log.info(
                 "Found {} stations for state={}",
@@ -61,84 +55,61 @@ public class StationController {
         return stations;
     }
 
-    /*
-     * Used to retrieve one station.
-     * Sample: /api/v1/stations/US1TXCLL005
-     */
     @GetMapping("/stations/{stationId}")
     public ResponseEntity<Station> getStation(
             @PathVariable String stationId
     ) {
-
         return stationRepository.findById(stationId)
                 .map(station -> {
-                    log.info("Station found with stationId={}", stationId);
+                    log.info(
+                            "Station found with stationId={}",
+                            stationId
+                    );
+
                     return ResponseEntity.ok(station);
                 })
                 .orElseGet(() -> {
-                    log.warn("Station not found with stationId={}", stationId);
+                    log.warn(
+                            "Station not found with stationId={}",
+                            stationId
+                    );
+
                     return ResponseEntity.notFound().build();
                 });
     }
+    
 
-    /*
-     * Sample: /api/v1/stations/US1TXCLL005/weather
-     */
-    @GetMapping(
-            value = "/stations/{stationId}/weather",
-            params = {"!from", "!to"}
-    )
-    public List<Records> getWeatherByStation(
-            @PathVariable String stationId
-    ) {
-        List<Records> records =
-                weatherDataRepository.findByStationIdOrderByDateDesc(stationId);
-
-        log.info(
-                "Found {} weather records for stationId={}",
-                records.size(),
-                stationId
-        );
-
-        return records;
-    }
-
-    /*
-     * Sample:
-     * /api/v1/stations/US1TXCLL005/weather?from=2026-01-01&to=2026-07-11
-     */
     @GetMapping(
             value = "/stations/{stationId}/weather",
             params = {"from", "to"}
     )
-    public List<Records> getWeatherByStationAndDateRange(
+    public List<DailyWeatherResponse> getWeatherByStationAndDateRange(
             @PathVariable String stationId,
             @RequestParam LocalDate from,
             @RequestParam LocalDate to
     ) {
         log.info(
-                "Fetching weather records for stationId={} from={} to={}",
+                "Fetching daily weather for stationId={} from={} to={}",
                 stationId,
                 from,
                 to
         );
 
-        List<Records> records =
-                weatherDataRepository
-                        .findByStationIdAndDateBetweenOrderByDateAsc(
-                                stationId,
-                                from,
-                                to
-                        );
+        List<DailyWeatherResponse> weather =
+                weatherRecordsService.findDailyWeather(
+                        stationId,
+                        from,
+                        to
+                );
 
         log.info(
-                "Found {} weather records for stationId={} from={} to={}",
-                records.size(),
+                "Found {} daily weather records for stationId={} from={} to={}",
+                weather.size(),
                 stationId,
                 from,
                 to
         );
 
-        return records;
+        return weather;
     }
 }

@@ -40,10 +40,10 @@ public class WeatherStationInitializer {
         /*
           Temp flag to avoid overflowing DB
          */
-//        if (stationRepository.count() > 0) {
-//            log.info("Station data already exists. Skipping station CSV import.");
-//            return;
-//        }
+        if (stationRepository.count() > 0) {
+            log.info("Station data already exists. Skipping station CSV import.");
+            return;
+        }
 
         try {
             Resource[] resources = resourcePatternResolver.getResources(
