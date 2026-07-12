@@ -45,10 +45,10 @@ public class WeatherDataInitializer {
           Temp flag to avoid overflowing DB,
           skips 30+ mln records insert if any exist
          */
-        if(weatherDataRepository.count() > 0){
-            log.info("Weather data already exists. Skipping CSV import.");
-            return;
-        }
+//        if(weatherDataRepository.count() > 0){
+//            log.info("Weather data already exists. Skipping CSV import.");
+//            return;
+//        }
 
         try {
             Resource[] resources = resourcePatternResolver.getResources(
