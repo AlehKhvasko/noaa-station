@@ -57,6 +57,8 @@ cd ..
 
 ### Start the application
 
+### !NOTE Initial cold start could take up to an hour. All data will be stored in DB.
+
 ```bash
 docker compose up --build
 ```
