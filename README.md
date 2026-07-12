@@ -1,5 +1,7 @@
 ## Download CSV Data
 
+Visual architecture [click here](https://app.eraser.io/workspace/XE5jb7EG7Z5zikYsQur7?origin=share)
+
 The NOAA CSV files are too large to store in GitHub.
 
 Download them from Google Drive:
