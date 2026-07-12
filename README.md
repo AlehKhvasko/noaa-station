@@ -80,7 +80,8 @@ Avoid the following command unless you want to delete the database:
 docker compose down -v
 ```
 
-Check logs of all service or particular service
+Check logs of all service or particular service.
+
 Sample: docker compose logs backend-1
 
 ```bash
