@@ -25,8 +25,10 @@ function App() {
     const [to, setTo] = useState("2026-12-31");
     const [error, setError] = useState("");
 
+    const MainURL = "http://localhost:8080/api/v1/";
+
     useEffect(() => {
-        fetch("http://localhost:8080/api/v1/states")
+        fetch(MainURL + "states")
             .then((response) => {
                 console.log("States response status:", response.status);
 
@@ -50,7 +52,7 @@ function App() {
             });
     }, []);
 
-    function loadStations(selectedState: string) {
+    async function loadStations(selectedState: string) {
         console.log("Selected state:", selectedState);
 
         setState(selectedState);
@@ -63,46 +65,38 @@ function App() {
             return;
         }
 
-        const params = new URLSearchParams({
-            state: selectedState,
-        });
-
-        const url =
-            `http://localhost:8080/api/v1/stations?${params.toString()}`;
+        const url = MainURL + `stations?state=${selectedState}`;
 
         console.log("Stations request URL:", url);
 
-        fetch(url)
-            .then((response) => {
-                console.log("Stations response status:", response.status);
+        try {
+            const response = await fetch(url);
 
-                if (!response.ok) {
-                    throw new Error(
-                        `Failed to load stations: ${response.status}`
-                    );
-                }
+            console.log("Stations response status:", response.status);
 
-                return response.json();
-            })
-            .then((data: Station[]) => {
-                console.log("Stations data:", data);
-                console.log("Stations count:", data.length);
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to load stations: ${response.status}`
+                );
+            }
 
-                if (data.length > 0) {
-                    console.table(data);
-                } else {
-                    console.warn(
-                        `No stations returned for state ${selectedState}`
-                    );
-                }
+            const data: Station[] = await response.json();
 
-                setStations(data);
-            })
-            .catch((error: unknown) => {
-                console.error("Failed to load stations:", error);
-                setStations([]);
-                setError("Could not load stations.");
-            });
+            console.log("Stations data:", data);
+            console.log("Stations count:", data.length);
+
+            if (data.length === 0) {
+                console.warn(
+                    `No stations returned for state ${selectedState}`
+                );
+            }
+
+            setStations(data);
+        } catch (error: unknown) {
+            console.error("Failed to load stations:", error);
+            setStations([]);
+            setError("Could not load stations.");
+        }
     }
 
     async function loadWeather() {
@@ -125,14 +119,11 @@ function App() {
             return;
         }
 
-        const params = new URLSearchParams({
-            from,
-            to,
-        });
-
         const url =
-            `http://localhost:8080/api/v1/stations/` +
-            `${encodeURIComponent(stationId)}/weather?${params.toString()}`;
+            MainURL +
+            `stations/${stationId}/weather` +
+            `?from=${from}` +
+            `&to=${to}`;
 
         console.log("Weather request URL:", url);
 
@@ -152,9 +143,7 @@ function App() {
             console.log("Weather data:", data);
             console.log("Weather records count:", data.length);
 
-            if (data.length > 0) {
-                console.table(data);
-            } else {
+            if (data.length === 0) {
                 console.warn("Backend returned 0 weather records.", {
                     stationId,
                     from,
@@ -208,8 +197,7 @@ function App() {
                 <select
                     value={stationId}
                     onChange={(event) => {
-                        const selectedStationId =
-                            event.target.value;
+                        const selectedStationId = event.target.value;
 
                         console.log(
                             "Selected station:",
@@ -268,47 +256,47 @@ function App() {
                 }}
             >
                 <thead>
-                <tr>
-                    <th style={cellStyle}>Date</th>
-                    <th style={cellStyle}>Station</th>
-                    <th style={cellStyle}>Rain</th>
-                    <th style={cellStyle}>Snowfall</th>
-                    <th style={cellStyle}>Snow depth</th>
-                </tr>
+                    <tr>
+                        <th style={cellStyle}>Date</th>
+                        <th style={cellStyle}>Station</th>
+                        <th style={cellStyle}>Rain</th>
+                        <th style={cellStyle}>Snowfall</th>
+                        <th style={cellStyle}>Snow depth</th>
+                    </tr>
                 </thead>
 
                 <tbody>
-                {records.map((record) => (
-                    <tr
-                        key={`${record.stationId}-${record.date}`}
-                    >
-                        <td style={cellStyle}>
-                            {record.date}
-                        </td>
+                    {records.map((record) => (
+                        <tr
+                            key={`${record.stationId}-${record.date}`}
+                        >
+                            <td style={cellStyle}>
+                                {record.date}
+                            </td>
 
-                        <td style={cellStyle}>
-                            {record.stationId}
-                        </td>
+                            <td style={cellStyle}>
+                                {record.stationId}
+                            </td>
 
-                        <td style={cellStyle}>
-                            {formatInches(
-                                record.precipitationInches
-                            )}
-                        </td>
+                            <td style={cellStyle}>
+                                {formatInches(
+                                    record.precipitationInches
+                                )}
+                            </td>
 
-                        <td style={cellStyle}>
-                            {formatInches(
-                                record.snowfallInches
-                            )}
-                        </td>
+                            <td style={cellStyle}>
+                                {formatInches(
+                                    record.snowfallInches
+                                )}
+                            </td>
 
-                        <td style={cellStyle}>
-                            {formatInches(
-                                record.snowDepthInches
-                            )}
-                        </td>
-                    </tr>
-                ))}
+                            <td style={cellStyle}>
+                                {formatInches(
+                                    record.snowDepthInches
+                                )}
+                            </td>
+                        </tr>
+                    ))}
                 </tbody>
             </table>
 
