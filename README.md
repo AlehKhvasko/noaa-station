@@ -21,9 +21,12 @@ For .gz files, unzip them with:
 
 For .zip files, use:
 
-``unzip "file.zip" -d src/main/resources/csv/station/``
+```bash
+unzip "file.zip" -d src/main/resources/csv/station/
+```
+```bash
 ``unzip "file.zip" -d src/main/resources/csv/weather/``
-
+```
 
 ## Run with Docker
 
