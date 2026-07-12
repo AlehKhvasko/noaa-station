@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: noaa_station
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - noaa_postgres_data:/var/lib/postgresql/data
+      - noaa_postgres_data:/var/lib/postgresql
 
   backend:
     build: .
