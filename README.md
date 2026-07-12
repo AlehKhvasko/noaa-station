@@ -16,13 +16,13 @@ src/main/resources/csv/weather/
 
 For .gz files, unzip them with:
 
-gunzip src/main/resources/csv/station/*.gz
-gunzip src/main/resources/csv/weather/*.gz
+``gunzip src/main/resources/csv/station/*.gz
+gunzip src/main/resources/csv/weather/*.gz``
 
 For .zip files, use:
 
-unzip "file.zip" -d src/main/resources/csv/station/
-unzip "file.zip" -d src/main/resources/csv/weather/
+``unzip "file.zip" -d src/main/resources/csv/station/
+unzip "file.zip" -d src/main/resources/csv/weather/``
 
 
 ## Run with Docker
