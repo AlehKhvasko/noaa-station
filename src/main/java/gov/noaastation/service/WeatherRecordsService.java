@@ -56,6 +56,7 @@ public class WeatherRecordsService {
                 );
             }
 
+            // PRCP = precipitation, SNOW = snowfall, SNWD = snow depth.
             switch (record.getElement()) {
                 case "PRCP" ->
                         day = new DailyWeatherResponse(
