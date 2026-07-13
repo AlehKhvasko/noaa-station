@@ -97,8 +97,8 @@ public class WeatherStationInitializer {
                         .countryCode(stationId.substring(0, 2))
                         .latitude(Double.parseDouble(record.get(1).trim()))
                         .longitude(Double.parseDouble(record.get(2).trim()))
-                        .elevationMeters(parseNullableDouble(record.get(3)))
-                        .stateCode(emptyToNull(record.get(4)))
+                        .elevationMeters(record.get(3).isBlank() ? null : Double.parseDouble(record.get(3).trim()))
+                        .stateCode(record.get(4).isBlank() ? null : record.get(4).trim())
                         .name(record.get(5).trim())
                         .build();
 
@@ -110,14 +110,14 @@ public class WeatherStationInitializer {
                     stationRepository.saveAll(batch);
                     stationRepository.flush();
 
-                    long elapsed = System.nanoTime() - start;
+                    long timeCheck = System.nanoTime() - start;
 
                     importedStations += batch.size();
 
                     log.info(
                             "Inserted {} stations in {} seconds. Total imported: {}",
                             batch.size(),
-                            String.format("%.3f", elapsed / 1_000_000_000.0),
+                            String.format("%.3f", timeCheck / 1_000_000_000.0),
                             importedStations
                     );
 
@@ -139,19 +139,5 @@ public class WeatherStationInitializer {
                 resource.getFilename(),
                 importedStations
         );
-    }
-
-    private String emptyToNull(String value) {
-        return value == null || value.isBlank()
-                ? null
-                : value.trim();
-    }
-
-    private Double parseNullableDouble(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return Double.parseDouble(value.trim());
     }
 }

@@ -109,7 +109,7 @@ public class WeatherRecordsService {
         return round(rawValue / 25.4);
     }
 
-    // two decimal places
+    // round up to two decimal places
     private double round(double value) {
         return BigDecimal.valueOf(value)
                 .setScale(2, RoundingMode.UP)

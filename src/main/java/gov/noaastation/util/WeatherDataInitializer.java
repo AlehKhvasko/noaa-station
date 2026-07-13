@@ -87,7 +87,6 @@ public class WeatherDataInitializer {
             CSVParser csvParser = CSVFormat.DEFAULT.parse(reader);
         ){
             long importedRecords = 0;
-            //TODO optimize?
             for (CSVRecord record : csvParser) {
                 Records weatherData = Records.builder()
                         .stationId(record.get(0).trim())
@@ -108,12 +107,12 @@ public class WeatherDataInitializer {
                     weatherDataRepository.saveAll(batch);
                     weatherDataRepository.flush();
 
-                    long elapsed = System.nanoTime() - start;
+                    long timeCheck = System.nanoTime() - start;
 
                     log.info(
                             "Inserted {} records in {} seconds. Total imported: {}",
                             batch.size(),
-                            String.format("%.3f", elapsed / 1_000_000_000.0),
+                            String.format("%.3f", timeCheck / 1_000_000_000.0),
                             importedRecords
                     );
 
