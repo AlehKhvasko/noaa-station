@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - noaa_postgres_data:/var/lib/postgresql
+      - noaa_postgres_data:/var/lib/postgresql/data
 
   backend:
     build: .
