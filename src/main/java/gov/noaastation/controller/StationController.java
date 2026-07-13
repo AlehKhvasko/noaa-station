@@ -28,6 +28,7 @@ public class StationController {
         this.weatherRecordsService = weatherRecordsService;
     }
 
+    // Sample: /api/v1/states
     @GetMapping("/states")
     public List<String> getStates() {
         List<String> states =
@@ -38,6 +39,7 @@ public class StationController {
         return states;
     }
 
+    // Sample: /api/v1/stations?state=TX
     @GetMapping("/stations")
     public List<Station> getStationsByState(
             @RequestParam String state
@@ -55,6 +57,7 @@ public class StationController {
         return stations;
     }
 
+    // Sample: /api/v1/stations/USW00012918
     @GetMapping("/stations/{stationId}")
     public ResponseEntity<Station> getStation(
             @PathVariable String stationId
@@ -77,8 +80,8 @@ public class StationController {
                     return ResponseEntity.notFound().build();
                 });
     }
-    
 
+    // Sample: /api/v1/stations/USW00012918/weather?from=2024-01-01&to=2024-01-31
     @GetMapping(
             value = "/stations/{stationId}/weather",
             params = {"from", "to"}
