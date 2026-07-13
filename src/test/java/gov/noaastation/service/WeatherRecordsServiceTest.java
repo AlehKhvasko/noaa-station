@@ -69,6 +69,20 @@ class WeatherRecordsServiceTest {
 
         assertEquals(2, responses.size());
 
+        DailyWeatherResponse firstDay = responses.getFirst();
+        assertEquals(from, firstDay.date());
+        assertEquals(stationId, firstDay.stationId());
+        assertEquals(1.0, firstDay.precipitationInches());
+        assertEquals(2.01, firstDay.snowfallInches());
+        assertEquals(5.0, firstDay.snowDepthInches());
+
+        DailyWeatherResponse secondDay = responses.get(1);
+        assertEquals(to, secondDay.date());
+        assertEquals(stationId, secondDay.stationId());
+        assertEquals(0.0, secondDay.precipitationInches());
+        assertNull(secondDay.snowfallInches());
+        assertNull(secondDay.snowDepthInches());
+
         verify(recordsRepository)
                 .findByStationIdAndDateBetweenOrderByDateAsc(stationId, from, to);
     }

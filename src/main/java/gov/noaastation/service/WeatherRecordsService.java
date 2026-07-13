@@ -23,60 +23,78 @@ public class WeatherRecordsService {
         this.recordsRepository = recordsRepository;
     }
 
+    // Returns one mapped weather response per day for a station.
     public List<DailyWeatherResponse> findDailyWeather(
             String stationId,
             LocalDate startDate,
             LocalDate endDate
     ) {
-        List<Records> records =
-                recordsRepository
-                        .findByStationIdAndDateBetweenOrderByDateAsc(
-                                stationId,
-                                startDate,
-                                endDate
-                        );
+        List<Records> records = recordsRepository
+                .findByStationIdAndDateBetweenOrderByDateAsc(
+                        stationId,
+                        startDate,
+                        endDate
+                );
 
-        Map<LocalDate, DailyWeatherBuilder> grouped =
-                new LinkedHashMap<>();
+        Map<LocalDate, DailyWeatherResponse> weather = new LinkedHashMap<>();
 
         for (Records record : records) {
             if (record.getValue() == null) {
                 continue;
             }
 
-            DailyWeatherBuilder day = grouped.computeIfAbsent(
-                    record.getDate(),
-                    date -> new DailyWeatherBuilder(
-                            date,
-                            record.getStationId()
-                    )
-            );
+            DailyWeatherResponse day = weather.get(record.getDate());
+
+            if (day == null) {
+                day = new DailyWeatherResponse(
+                        record.getDate(),
+                        record.getStationId(),
+                        null,
+                        null,
+                        null
+                );
+            }
 
             switch (record.getElement()) {
                 case "PRCP" ->
-                        day.precipitationInches =
-                                precipitationToInches(record.getValue());
+                        day = new DailyWeatherResponse(
+                                day.date(),
+                                day.stationId(),
+                                precipitationToInches(record.getValue()),
+                                day.snowfallInches(),
+                                day.snowDepthInches()
+                        );
 
                 case "SNOW" ->
-                        day.snowfallInches =
-                                millimetersToInches(record.getValue());
+                        day = new DailyWeatherResponse(
+                                day.date(),
+                                day.stationId(),
+                                day.precipitationInches(),
+                                millimetersToInches(record.getValue()),
+                                day.snowDepthInches()
+                        );
 
                 case "SNWD" ->
-                        day.snowDepthInches =
-                                millimetersToInches(record.getValue());
+                        day = new DailyWeatherResponse(
+                                day.date(),
+                                day.stationId(),
+                                day.precipitationInches(),
+                                day.snowfallInches(),
+                                millimetersToInches(record.getValue())
+                        );
 
                 default -> {
-                    // Ignore unsupported NOAA elements
+                    // Ignore unsupported elements
                 }
             }
+
+            weather.put(record.getDate(), day);
         }
 
-        return grouped.values()
-                .stream()
-                .map(DailyWeatherBuilder::build)
-                .toList();
+        return List.copyOf(weather.values());
     }
 
+    //tenths of millimeters to inches.
     private double precipitationToInches(int rawValue) {
         double millimeters = rawValue / 10.0;
         return round(millimeters / 25.4);
@@ -86,37 +104,10 @@ public class WeatherRecordsService {
         return round(rawValue / 25.4);
     }
 
+    // two decimal places
     private double round(double value) {
         return BigDecimal.valueOf(value)
-                .setScale(2, RoundingMode.HALF_UP)
+                .setScale(2, RoundingMode.UP)
                 .doubleValue();
-    }
-
-    private static class DailyWeatherBuilder {
-
-        private final LocalDate date;
-        private final String stationId;
-
-        private Double precipitationInches;
-        private Double snowfallInches;
-        private Double snowDepthInches;
-
-        private DailyWeatherBuilder(
-                LocalDate date,
-                String stationId
-        ) {
-            this.date = date;
-            this.stationId = stationId;
-        }
-
-        private DailyWeatherResponse build() {
-            return new DailyWeatherResponse(
-                    date,
-                    stationId,
-                    precipitationInches,
-                    snowfallInches,
-                    snowDepthInches
-            );
-        }
     }
 }
