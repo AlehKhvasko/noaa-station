@@ -8,19 +8,20 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class WeatherRecordsService {
 
-    private final WeatherDataRepository recordsRepository;
+    private final WeatherDataRepository weatherDataRepository;
 
     public WeatherRecordsService(
-            WeatherDataRepository recordsRepository
+            WeatherDataRepository weatherDataRepository
     ) {
-        this.recordsRepository = recordsRepository;
+        this.weatherDataRepository = weatherDataRepository;
     }
 
     // Returns one mapped weather response per day for a station.
@@ -29,14 +30,14 @@ public class WeatherRecordsService {
             LocalDate startDate,
             LocalDate endDate
     ) {
-        List<Records> records = recordsRepository
+        List<Records> records = weatherDataRepository
                 .findByStationIdAndDateBetweenOrderByDateAsc(
                         stationId,
                         startDate,
                         endDate
                 );
 
-        Map<LocalDate, DailyWeatherResponse> weather = new LinkedHashMap<>();
+        Map<LocalDate, DailyWeatherResponse> weather = new HashMap<>();
 
         for (Records record : records) {
             if (record.getValue() == null) {
@@ -91,7 +92,10 @@ public class WeatherRecordsService {
             weather.put(record.getDate(), day);
         }
 
-        return List.copyOf(weather.values());
+        return weather.values()
+                .stream()
+                .sorted(Comparator.comparing(DailyWeatherResponse::date))
+                .toList();
     }
 
     //tenths of millimeters to inches.
