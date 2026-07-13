@@ -4,6 +4,10 @@ import gov.noaastation.dto.DailyWeatherResponse;
 import gov.noaastation.entity.Records;
 import gov.noaastation.repository.WeatherDataRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -11,17 +15,17 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class WeatherRecordsServiceTest {
 
-    private final WeatherDataRepository recordsRepository =
-            mock(WeatherDataRepository.class);
+    @Mock
+    private WeatherDataRepository recordsRepository;
 
-    private final WeatherRecordsService weatherRecordsService =
-            new WeatherRecordsService(recordsRepository);
+    @InjectMocks
+    private WeatherRecordsService weatherRecordsService;
 
     @Test
     void findDailyWeatherGroupsRecordsByDateAndConvertsValuesToInches() {
